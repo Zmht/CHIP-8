@@ -1,7 +1,10 @@
 #include <fstream>
 #include <cstdint>
 #include <iostream>
+#include <stdio.h>
+#include <string.h>
 #include <chrono>
+#include <cstring>
 #include <random>
 
 using BYTE = uint8_t;
@@ -25,7 +28,7 @@ class Chip8
 	BYTE soundTimer{};
 	BYTE keys[16]{};
 	uint32_t video[64 * 32]{};
-	WORD opcode;
+	WORD opcode{};
 	BYTE fontset[FONTSET_SIZE] = 
 	{
 		0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -80,143 +83,189 @@ class Chip8
 		} else std::cout << "Unable to load ROM.";
 	}
 
-	// 00E0 - CLS
+	// 00E0 - CLS - Clear the display
+    void OP_00E0()
+    {
+	    memset(video, 0, sizeof(video));    
+    }
+
+    // 00EE - RET - Return from a subroutine
+    void OP_00EE()
+    {
+        stackPointer--;
+        PC = stack[stackPointer];
+    }
+
+     // 1nnn - JP addr - Jumps to location nnn
+     void OP_1nnn()
+     {
+         WORD address = opcode & 0xFFFu;
+         PC = address;
+     }
+
+     // 2nnn - CALL addr - calls a subroutine at nnn
+    void OP_2nnn()
+    {
+        WORD address = opcode & 0x0FFu;
+        stack[stackPointer] = PC;
+        stackPointer++;
+        PC = address;
+    }
+
+     // 3xkk - SE Vx, byte - Skips the next instruction if vx = kk
+    void OP_3xkk()
+    {
+        BYTE Vx = (opcode & 0x0F00u) >> 8u;
+        BYTE byte = opcode & 0x00FFu;
+        if (registers[Vx] == byte);
+        {
+            PC+=2;
+        }
+    }
+
+     // 4xkk - SNE Vx, byte - Skips next instruction if Vx is not equal to kk
+    void OP_4xkk()
+    {
+        BYTE Vx = (opcode & 0x0F00u) >> 8u;
+        BYTE byte = opcode & 0x00FFu;
+        if(registers[Vx] != byte)
+        {
+            PC+=2;
+        }
+    }
+
+     // 5xy0 - SE Vx, Vy - skip next instruction if Vx == Vy
+     void OP_5xy0()
+     {
+         BYTE Vx = (opcode * 0x0F00u) >> 8u;
+         BYTE Vy = (opcode & 0x00F0u) >> 4u;
+
+         if (registers[Vx] == registers[Vy])
+         {
+             PC+=2;
+         }
+     }
+
+     // 6xkk - LD Vx, byte - sets Vx to kk
+     void OP_6xkk()
+     {
+         BYTE Vx = (opcode & 0x0F00u) >> 8u;
+         BYTE byte = opcode & 0x00FFu;
+         registers[Vx] = byte;
+     }
+
+     // 7xkk - ADD Vx, byte - adds Vx and kk and then sets Vx to the sum
+     void OP_7xkk()
+     {
+         BYTE Vx = (opcode & 0x0F00u) >> 8u;
+         BYTE byte = opcode & 0x00FFu;
+         registers[Vx] += byte;
+     }
+
+     // 8xy0 - LD Vx, Vy - set Vx to Vy
+     void OP_8xy0()
+     {
+         BYTE Vx = (opcode & 0x0F00u) >> 8u;
+         BYTE Vy = (opcode & 0x00F0u) >> 4u;
+         registers[Vx] = registers[Vy];
+     }
+
+     // 8xy1 - OR Vx, Vy - set Vx to Vx or Vy
+     void OP_8xy1()
+     {
+         BYTE Vx = (opcode & 0x0F00u) >> 8u;
+         BYTE Vy = (opcode & 0x00F0u) >> 4u;
+         registers[Vx] |= registers[Vy];
+     }
+
+     // 8xy2 - AND Vx, Vy - sets Vx to Vx and Vy
+     void OP_8xy2()
+     {
+         BYTE Vx = (opcode & 0x0F00u) >> 8u;
+         BYTE Vy = (opcode & 0x00F0u) >> 4u;
+         registers[Vx] &= registers[Vy];
+     }
 
-    // 00EE - RET
+     // 8xy3 - XOR Vx, Vy - Set Vx to Vx XOR Vy
+     void OP_8xy3()
+     {
+        BYTE Vx = (opcode & 0x0F00u) >> 8u;
+         BYTE Vy = (opcode & 0x00F0u) >> 4u;
+         registers[Vx] ^= registers[Vy];
+     }
 
-    // 00EE - RET
+     // 8xy4 - ADD Vx, Vy
+     void OP_8xy4()
+     {
+        BYTE Vx = (opcode & 0x0F00u) >> 8u;
+        BYTE Vy = (opcode & 0x00F0u) >> 4u;
+        WORD sum = registers[Vx] + registers[Vy];
+        if(sum > 355u)
+        {
+            registers[0xF] = 1;
+        }
+        else
+        {
+            registers[0xF] = 0;
+        }
 
-    // 0nnn - SYS addr
+         registers[Vx] = sum & 0xFFu;
+     }
 
-    // 0nnn - SYS addr
+     // 8xy5 - SUB Vx, Vy - Set Vx to Vx - Vy. set Vf to not borrow
+     void OP_8xy5()
+     {
+        BYTE Vx = (opcode & 0x0F00u) >> 8u;
+        BYTE Vy = (opcode & 0x00F0u) >> 4u;
+        if(registers[Vx] > registers[Vy])
+        {
+            registers[0xF] = 1;
+        }
+        else
+        {
+            registers[0xF] = 0;
+        }
+         registers[Vx] -= registers[Vy];
+     }
 
-    // 1nnn - JP addr
+     // 8xy6 - SHR Vx {, Vy}
 
-    // 1nnn - JP addr
+     // 8xy7 - SUBN Vx, Vy
 
-    // 2nnn - CALL addr
+     // 8xyE - SHL Vx {, Vy}
 
-    // 2nnn - CALL addr
+     // 9xy0 - SNE Vx, Vy
 
-    // 3xkk - SE Vx, byte
+     // Annn - LD I, addr
 
-    // 3xkk - SE Vx, byte
+     // Bnnn - JP V0, addr
 
-    // 4xkk - SNE Vx, byte
+     // Cxkk - RND Vx, byte
 
-    // 4xkk - SNE Vx, byte
+     // Dxyn - DRW Vx, Vy, nibble
 
-    // 5xy0 - SE Vx, Vy
+     // Ex9E - SKP Vx
 
-    // 5xy0 - SE Vx, Vy
+     // ExA1 - SKNP Vx
 
-    // 6xkk - LD Vx, byte
+     // Fx07 - LD Vx, DT
 
-    // 6xkk - LD Vx, byte
+     // Fx0A - LD Vx, K
 
-    // 7xkk - ADD Vx, byte
+     // Fx15 - LD DT, Vx
 
-    // 7xkk - ADD Vx, byte
+     // Fx18 - LD ST, Vx
 
-    // 8xy0 - LD Vx, Vy
+     // Fx1E - ADD I, Vx
 
-    // 8xy0 - LD Vx, Vy
+     // Fx29 - LD F, Vx
 
-    // 8xy1 - OR Vx, Vy
+     // Fx33 - LD B, Vx
 
-    // 8xy1 - OR Vx, Vy
+     // Fx55 - LD [I], Vx
 
-    // 8xy2 - AND Vx, Vy
+     // Fx65 - LD Vx, [I]
 
-    // 8xy2 - AND Vx, Vy
-
-    // 8xy3 - XOR Vx, Vy
-
-    // 8xy3 - XOR Vx, Vy
-
-    // 8xy4 - ADD Vx, Vy
-
-    // 8xy4 - ADD Vx, Vy
-
-    // 8xy5 - SUB Vx, Vy
-
-    // 8xy5 - SUB Vx, Vy
-
-    // 8xy6 - SHR Vx {, Vy}
-
-    // 8xy6 - SHR Vx {, Vy}
-
-    // 8xy7 - SUBN Vx, Vy
-
-    // 8xy7 - SUBN Vx, Vy
-
-    // 8xyE - SHL Vx {, Vy}
-
-    // 8xyE - SHL Vx {, Vy}
-
-    // 9xy0 - SNE Vx, Vy
-
-    // 9xy0 - SNE Vx, Vy
-
-    // Annn - LD I, addr
-
-    // Annn - LD I, addr
-
-    // Bnnn - JP V0, addr
-
-    // Bnnn - JP V0, addr
-
-    // Cxkk - RND Vx, byte
-
-    // Cxkk - RND Vx, byte
-
-    // Dxyn - DRW Vx, Vy, nibble
-
-    // Dxyn - DRW Vx, Vy, nibble
-
-    // Ex9E - SKP Vx
-
-    // Ex9E - SKP Vx
-
-    // ExA1 - SKNP Vx
-
-    // ExA1 - SKNP Vx
-
-    // Fx07 - LD Vx, DT
-
-    // Fx07 - LD Vx, DT
-
-    // Fx0A - LD Vx, K
-
-    // Fx0A - LD Vx, K
-
-    // Fx15 - LD DT, Vx
-
-    // Fx15 - LD DT, Vx
-
-    // Fx18 - LD ST, Vx
-
-    // Fx18 - LD ST, Vx
-
-    // Fx1E - ADD I, Vx
-
-    // Fx1E - ADD I, Vx
-
-    // Fx29 - LD F, Vx
-
-    // Fx29 - LD F, Vx
-
-    // Fx33 - LD B, Vx
-
-    // Fx33 - LD B, Vx
-
-    // Fx55 - LD [I], Vx
-
-    // Fx55 - LD [I], Vx
-
-    // Fx65 - LD Vx, [I]
-
-    // Fx65 - LD Vx, [I]
 
 };
 
