@@ -117,7 +117,7 @@ class Chip8
     {
         BYTE Vx = (opcode & 0x0F00u) >> 8u;
         BYTE byte = opcode & 0x00FFu;
-        if (registers[Vx] == byte);
+        if (registers[Vx] == byte)
         {
             PC+=2;
         }
@@ -228,7 +228,14 @@ class Chip8
          registers[Vx] -= registers[Vy];
      }
 
-     // 8xy6 - SHR Vx {, Vy}
+     // 8xy6 - SHR Vx {, Vy} - Set Vx to Vx SHR 1
+     void OP_8xy6()
+     {
+         BYTE Vx = (opcode & 0x0F00u) >> 8u;
+
+         registers[0xF] = (registers[Vx] & 0x1u);
+         registers[Vx] >>= 1;
+     } 
 
      // 8xy7 - SUBN Vx, Vy
 
