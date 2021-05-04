@@ -5,8 +5,7 @@ DFLAGS=-g
 PROJECT=chip8
 OUT=bin
 
-chip8-emulator: chip8.cpp
-	$(CC) -o $(OUT) chip8.cpp $(CFLAGS)
+
 chip8: chip8.cpp
 	$(CC) -o $(OUT)/$(PROJECT) chip8.cpp $(CFLAGS) $(WFLAGS)
 
