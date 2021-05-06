@@ -49,7 +49,7 @@ class Chip8
 		0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 	};
 	std::default_random_engine randGen;
-	std::uniform_int_distribution<uint8_t> randByte;
+	std::uniform_int_distribution<BYTE> randByte;
 
 	Chip8()
 	: randGen(std::chrono::system_clock::now().time_since_epoch().count())
@@ -279,5 +279,6 @@ class Chip8
 
 int main()
 {
+	Chip8 cpu;
 	return 0;
 }
