@@ -237,9 +237,30 @@ class Chip8
          registers[Vx] >>= 1;
      } 
 
-     // 8xy7 - SUBN Vx, Vy
+     // 8xy7 - SUBN Vx, Vy Set Vx to Vx - Vy and set VF to not borrow.
+     void OP_8xy7()
+     {
+         BYTE Vx = (opcode & 0x0F00u) >> 8u;
+         BYTE Vy = (opcode & 0x00F0u) >> 4u;
+         if(registers[Vx] > registers[Vy])
+         {
+             registers[0xF] = 1;
+         }
+         else
+         {
+             registers[0xF] = 0;
+         }
+        registers[Vx] -= registers[Vy];
+     }
 
-     // 8xyE - SHL Vx {, Vy}
+     // 8xyE - SHL Vx {, Vy} - Shifts Vx left
+     void OP_8xyE()
+    {
+        BYTE Vx = (opcode & 0x0F00u);
+        registers[0xF] = (registers[Vx] & 0x80u) >> 7u;
+
+        registers[Vx] <<= 1;
+    }
 
      // 9xy0 - SNE Vx, Vy
 

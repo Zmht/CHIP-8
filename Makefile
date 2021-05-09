@@ -7,8 +7,9 @@ OUT=bin
 
 default: debug
 
-chip8: chip8.cpp
-	$(CC) -o $(OUT)/$(PROJECT) chip8.cpp $(CFLAGS) $(WFLAGS)
+
+optimize: chip8.cpp
+	$(CC) -o $(OUT)/$(PROJECT) chip8.cpp $(CFLAGS) --optimize
 
 debug: chip8.cpp
 	$(CC) -o $(OUT)/$(PROJECT) chip8.cpp $(CFLAGS) $(DFLAGS) $(WFLAGS)
@@ -16,4 +17,4 @@ debug: chip8.cpp
 
 
 clean:
-	rm -f $(OUT)/*
+	rm -fr $(OUT)/*
