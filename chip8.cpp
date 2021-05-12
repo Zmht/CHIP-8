@@ -17,7 +17,20 @@ const unsigned int FONTSET_START_ADDRESS = 0x50;
 
 class Chip8
 {
-	public:
+    public:
+    Chip8()
+	: randGen(std::chrono::system_clock::now().time_since_epoch().count())
+	{
+		PC = START_ADDRESS; //initalizes the program counter.
+		for(unsigned int i = 0; i < FONTSET_SIZE; ++i)
+		{
+			memory[FONTSET_START_ADDRESS + i] = fontset[i];
+
+		}
+		randByte = std::uniform_int_distribution<BYTE>(0, 255U);
+	}
+    
+	private:
 	BYTE registers[16]{};
 	BYTE memory[4096]{};
 	WORD indexReg{};
@@ -30,7 +43,7 @@ class Chip8
 	uint32_t video[64 * 32]{};
 	WORD opcode{};
 	BYTE fontset[FONTSET_SIZE] = 
-	{
+	{ 
 		0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
 		0x20, 0x60, 0x20, 0x20, 0x70, // 1
 		0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -51,17 +64,6 @@ class Chip8
 	std::default_random_engine randGen;
 	std::uniform_int_distribution<BYTE> randByte;
 
-	Chip8()
-	: randGen(std::chrono::system_clock::now().time_since_epoch().count())
-	{
-		PC = START_ADDRESS; //initalizes the program counter.
-		for(unsigned int i = 0; i < FONTSET_SIZE; ++i)
-		{
-			memory[FONTSET_START_ADDRESS + i] = fontset[i];
-
-		}
-		randByte = std::uniform_int_distribution<BYTE>(0, 255U);
-	}
 
 	void loadROM(char const* filename)
 	{

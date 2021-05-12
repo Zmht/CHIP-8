@@ -1,6 +1,6 @@
 CC=clang++
 CFLAGS=-std=c++17
-WFLAGS=-Wall -Werror
+WFLAGS=-Wall 
 DFLAGS=-g
 PROJECT=chip8
 OUT=bin
